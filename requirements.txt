@@ -1,4 +1,5 @@
 streamlit
-pytz
 requests
-icalendar
+pytz
+feedparser
+beautifulsoup4
