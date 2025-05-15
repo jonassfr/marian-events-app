@@ -11,6 +11,7 @@ st.set_page_config(page_title="Marian Events Selector", layout="wide")
 JSON_URL = "https://www.marian.edu/events/_data/current-live.json"
 RSS_URL = "https://connect.marian.edu/events.rss"  # ✅ das muss rein!
 ICAL_URL = "https://connect.marian.edu/events.ics"
+MUKNIGHTS_RSS_URL = "https://muknights.com/calendar.ashx/calendar.rss?sport_id=0&_=cmapqlxzs0001359sumhrir9j"
 TARGET_LOCATION = "Indianapolis"
 
 # === Functions ===
@@ -70,6 +71,40 @@ def load_rss_events():
 
     return events
 
+@st.cache_data
+def load_muknights_rss_events():
+    import html
+    from dateutil import parser  # besser als datetime.strptime für ISO-Formate
+    feed = feedparser.parse(MUKNIGHTS_RSS_URL)
+    eastern = pytz.timezone("US/Eastern")
+    events = []
+
+    for entry in feed.entries:
+        try:
+            title = html.unescape(entry.get("title", "Untitled"))
+            link = entry.get("link", "")
+            location = entry.get("ev_location", "Indianapolis")
+
+            # 🕒 Zeit korrekt parsen (z.B. "2025-04-15T18:00:00.0000000Z")
+            raw_dt = entry.get("ev_localstartdate") or entry.get("ev_startdate")
+            if not raw_dt:
+                st.warning(f"Skipped event (no start date): {title}")
+                continue
+
+            start = parser.isoparse(raw_dt).astimezone(eastern)
+
+            events.append({
+                "title": title,
+                "startDate": start.isoformat(),
+                "location": location,
+                "url": link
+            })
+
+        except Exception as err:
+            st.error(f"❌ Parsing error: {err}")
+            continue
+
+    return events
 
 def format_selected_events(events):
     eastern = pytz.timezone("US/Eastern")
@@ -116,7 +151,8 @@ option = st.selectbox(
     "Select event source:",
     [
         "Campus Events (https://www.marian.edu/events/)",
-        "Connect Events (https://connect.marian.edu/events)"
+        "Connect Events (https://connect.marian.edu/events)",
+        "Muknights Events (https://muknights.com/calendar)"
     ]
 )
 
@@ -128,6 +164,8 @@ if option.startswith("Campus Events"):
     ]
 elif option.startswith("Connect Events"):
     filtered = load_rss_events()
+elif option.startswith("Muknights Events"):
+    filtered = load_muknights_rss_events()
 else:
     filtered = []
 
