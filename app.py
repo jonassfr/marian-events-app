@@ -74,7 +74,8 @@ def load_rss_events():
 @st.cache_data
 def load_muknights_rss_events():
     import html
-    from dateutil import parser  # besser als datetime.strptime für ISO-Formate
+    import re
+    from dateutil import parser
     feed = feedparser.parse(MUKNIGHTS_RSS_URL)
     eastern = pytz.timezone("US/Eastern")
     events = []
@@ -82,10 +83,15 @@ def load_muknights_rss_events():
     for entry in feed.entries:
         try:
             title = html.unescape(entry.get("title", "Untitled"))
+
+            # Entferne Datum & Uhrzeit am Anfang
+            title = re.sub(r"^\d{1,2}/\d{1,2}(\s+\d{1,2}:\d{2}\s*[APMapm]{2})?\s*", "", title)
+            # Entferne Tags wie [W], [M], [JV], [B]
+            title = re.sub(r"\[\s*[A-Za-z]+\s*\]", "", title).strip()
+
             link = entry.get("link", "")
             location = entry.get("ev_location", "Indianapolis")
 
-            # 🕒 Zeit korrekt parsen (z.B. "2025-04-15T18:00:00.0000000Z")
             raw_dt = entry.get("ev_localstartdate") or entry.get("ev_startdate")
             if not raw_dt:
                 st.warning(f"Skipped event (no start date): {title}")
@@ -105,6 +111,7 @@ def load_muknights_rss_events():
             continue
 
     return events
+
 
 def format_selected_events(events):
     eastern = pytz.timezone("US/Eastern")
