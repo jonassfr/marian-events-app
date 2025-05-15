@@ -6,6 +6,8 @@ import feedparser
 
 
 st.set_page_config(page_title="Marian Events Selector", layout="wide")
+if "selected_events" not in st.session_state:
+    st.session_state.selected_events = []
 
 # === Config ===
 JSON_URL = "https://www.marian.edu/events/_data/current-live.json"
@@ -176,10 +178,15 @@ elif option.startswith("Muknights Events"):
 else:
     filtered = []
 
+if "checkbox_states" not in st.session_state:
+    st.session_state.checkbox_states = {}
+
+if "event_lookup" not in st.session_state:
+    st.session_state.event_lookup = {}
+
 if not filtered:
     st.warning("No events found.")
 else:
-    selected = []
     for event in sorted(filtered, key=lambda x: x["startDate"]):
         title = event.get("title", "Untitled")
         location = event.get("location", "")
@@ -188,13 +195,31 @@ else:
         time = start.strftime("%I:%M %p").lstrip("0")
 
         label = f"📅 {date} – {title} ({time}, {location})"
-        if st.checkbox(label, key=hash(str(event))):
-            selected.append(event)
+        unique_key = f'{title}_{start.isoformat()}_{event.get("url", "")}'
 
-    if selected:
+        # 🔁 Event global merken
+        st.session_state.event_lookup[unique_key] = event
+
+        # Checkbox anzeigen mit gemerktem Zustand
+        checked = st.session_state.checkbox_states.get(unique_key, False)
+        checked = st.checkbox(label, key=unique_key, value=checked)
+        st.session_state.checkbox_states[unique_key] = checked
+
+    # ✅ Final ausgewählte Events sammeln
+    st.session_state.selected_events = [
+        st.session_state.event_lookup[key]
+        for key, is_checked in st.session_state.checkbox_states.items()
+        if is_checked and key in st.session_state.event_lookup
+    ]
+
+    # Entferne Duplikate (z. B. beim Hin- und Herwechseln der Quellen)
+    unique_events = {e["title"] + e["startDate"]: e for e in st.session_state.selected_events}
+    combined_selected = list(unique_events.values())
+
+    if combined_selected:
         st.markdown("---")
         st.subheader("📝 Formatted HTML Output")
-        text_output = format_selected_events(selected)
+        text_output = format_selected_events(combined_selected)
         st.markdown("### 📧 HTML Newsletter Preview")
         st.markdown(text_output, unsafe_allow_html=True)
         st.download_button("⬇️ Download HTML file", text_output, file_name="selected-events.html")
