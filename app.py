@@ -371,9 +371,12 @@ st.markdown("### 🔷 Step 2: Select needed events. Change event source to view 
 
 
 
-search_query = st.text_input("🔍 Search for event title (optional):", "")
+with st.expander("🔍 Search for event title (optional)"):
+    search_query = st.text_input("", placeholder="Enter keyword...")
+
 if search_query:
     filtered = [e for e in filtered if search_query.lower() in e.get("title", "").lower()]
+
 
 show_only_future = st.checkbox("🔜 Show only upcoming events (from today)", value=False)
 if show_only_future:
