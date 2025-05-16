@@ -302,6 +302,7 @@ def format_selected_events(events):
 # === UI ===
 
 st.title("🗓️ Marian Event Selector")
+st.info("✅ Select events to generate the HTML output.")
 st.info("👉 **After** selecting all needed events please make sure **Connect Events** is selected **before** downloading the HTML output to ensure accurate location details.")
 
 option = st.selectbox(
