@@ -78,7 +78,7 @@ div[data-baseweb="select"] {
     background-color: #F8F9FC;
     border: 2px solid #031E51;
     border-radius: 8px;
-    padding: 0.5rem;
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
     box-shadow: 0 1px 4px rgba(3, 30, 81, 0.1);
 }
