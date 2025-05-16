@@ -9,6 +9,83 @@ st.set_page_config(page_title="Marian Events Selector", layout="wide")
 if "selected_events" not in st.session_state:
     st.session_state.selected_events = []
 
+st.markdown("""
+<style>
+/* Macht rechte Spalte sticky */
+.sticky-output {
+    position: sticky;
+    top: 100px;
+    align-self: flex-start;
+    background-color: #F9FAFB;
+    padding: 1.2rem;
+    border: 1px solid #DAD9D6;
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.04);
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+st.markdown("""
+    <style>
+    .block-container {
+        padding: 2rem 2rem 4rem;
+        max-width: 900px;
+        margin: auto;
+    }
+
+    h1 {
+        font-family: 'Source Sans Pro', sans-serif;
+        font-size: 2.2rem;
+        color: #031E51;
+    }
+
+    /* Checkbox block */
+    .stCheckbox {
+        margin-bottom: 0.5rem;
+        padding: 0.6rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        background-color: #FAFAFA;
+        border: 1px solid #DAD9D6;
+    }
+
+    /* Visuelles Feedback bei Hover */
+    .stCheckbox:hover {
+        background-color: #F0F4FF;
+        border-color: #031E51;
+    }
+
+    /* Sichtbare Auswahl mit markiertem Kasten */
+    input[type="checkbox"]:checked + div {
+        background-color: #E8F0FF !important;
+        border-left: 5px solid #FDB813 !important;
+        padding-left: 12px;
+        font-weight: 600;
+    }
+
+    /* Buttons */
+    .stButton>button, .stDownloadButton>button {
+        background-color: #FDB813;
+        color: black;
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
+        margin-top: 1rem;
+        transition: 0.2s ease-in-out;
+    }
+    .stButton>button:hover, .stDownloadButton>button:hover {
+        background-color: #e0a400;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Marian University Logo oben anzeigen
+st.image("https://www.marian.edu/images/default-source/_logos/marian-university-logo.png?sfvrsn=0&MaxWidth=100&MaxHeight=100&ScaleUp=false&Quality=High&Method=ResizeFitToAreaArguments&Signature=0B8446F612A6F807C9682F238368F952", width=200)
+
+
+
+
 # === Config ===
 JSON_URL = "https://www.marian.edu/events/_data/current-live.json"
 RSS_URL = "https://connect.marian.edu/events.rss"  # ✅ das muss rein!
@@ -156,6 +233,8 @@ def format_selected_events(events):
 # === UI ===
 
 st.title("🗓️ Marian Event Selector")
+st.info("👉 Please make sure **Connect Events** is selected before downloading the HTML output to ensure accurate location details.")
+
 option = st.selectbox(
     "Select event source:",
     [
@@ -184,12 +263,14 @@ if "checkbox_states" not in st.session_state:
 if "event_lookup" not in st.session_state:
     st.session_state.event_lookup = {}
 
-if not filtered:
-    st.warning("No events found.")
-else:
+# 🟦 Layout in zwei Spalten: Events (links) und Output (rechts)
+# Neue Spalten-Struktur
+left, right = st.columns([2, 1])
+
+with left:
     for event in sorted(filtered, key=lambda x: x["startDate"]):
         title = event.get("title", "Untitled")
-        location = event.get("location", "")
+        location = event.get("location", "Indianapolis")
         start = datetime.fromisoformat(event["startDate"]).astimezone(pytz.timezone("US/Eastern"))
         date = start.strftime("%A, %B %d")
         time = start.strftime("%I:%M %p").lstrip("0")
@@ -197,33 +278,64 @@ else:
         label = f"📅 {date} – {title} ({time}, {location})"
         unique_key = f'{title}_{start.isoformat()}_{event.get("url", "")}'
 
-        # 🔁 Event global merken
         st.session_state.event_lookup[unique_key] = event
-
-        # Checkbox anzeigen mit gemerktem Zustand
         checked = st.session_state.checkbox_states.get(unique_key, False)
         checked = st.checkbox(label, key=unique_key, value=checked)
         st.session_state.checkbox_states[unique_key] = checked
 
-    # ✅ Final ausgewählte Events sammeln
-    st.session_state.selected_events = [
-        st.session_state.event_lookup[key]
-        for key, is_checked in st.session_state.checkbox_states.items()
-        if is_checked and key in st.session_state.event_lookup
-    ]
+# ✅ Session-State aktualisieren mit allen aktuell gesetzten Checkboxen
+st.session_state.selected_events = [
+    st.session_state.event_lookup[key]
+    for key, is_checked in st.session_state.checkbox_states.items()
+    if is_checked and key in st.session_state.event_lookup
+]
 
-    # Entferne Duplikate (z. B. beim Hin- und Herwechseln der Quellen)
-    unique_events = {e["title"] + e["startDate"]: e for e in st.session_state.selected_events}
-    combined_selected = list(unique_events.values())
+# ✅ Doppelte Events vermeiden (z. B. bei Quellwechsel)
+# Priorisiere Events aus Connect
+
+event_priority = {
+    "connect.marian.edu": 1,
+    "muknights.com": 2,
+    "marian.edu": 3
+}
+
+def get_source(event):
+    url = event.get("url", "").lower()
+    for source in event_priority:
+        if source in url:
+            return source
+    return "unknown"
+
+
+merged = {}
+for e in st.session_state.selected_events:
+    key = e["title"] + e["startDate"]
+    current_source = get_source(e)
+    if key not in merged or event_priority[get_source(merged[key])] > event_priority[current_source]:
+        merged[key] = e
+
+combined_selected = list(merged.values())
+
+
+with right:
+    st.markdown('<div class="sticky-output">', unsafe_allow_html=True)
+
+    if st.button("❌ Clear all selections"):
+        for key in st.session_state.checkbox_states:
+            st.session_state.checkbox_states[key] = False
+        st.session_state.selected_events = []
+    
 
     if combined_selected:
-        st.markdown("---")
-        st.subheader("📝 Formatted HTML Output")
+        st.markdown("### 📝 Formatted HTML Output")
         text_output = format_selected_events(combined_selected)
         st.markdown("### 📧 HTML Newsletter Preview")
         st.markdown(text_output, unsafe_allow_html=True)
         st.download_button("⬇️ Download HTML file", text_output, file_name="selected-events.html")
     else:
-        st.info("Select events above to generate the HTML output.")
+        st.info("✅ Select events to generate the HTML output.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 
