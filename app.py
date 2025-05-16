@@ -71,6 +71,44 @@ div[data-testid="stCheckbox"] {
 div[data-testid="stCheckbox"]:hover {
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
+
+
+/* HEBT das Select-Feld hervor */
+div[data-baseweb="select"] {
+    background-color: #F8F9FC;
+    border: 2px solid #031E51;
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 4px rgba(3, 30, 81, 0.1);
+}
+
+
+/* Abstand vor dem Selectfeld */
+section > div:nth-child(3) {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+input[type="text"] {
+    background-color: #FFFFFF;
+    border: 2px solid #E0E0E0;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: 0.2s ease-in-out;
+}
+
+input[type="text"]:focus {
+    border-color: #031E51;
+    box-shadow: 0 0 0 3px rgba(3, 30, 81, 0.15);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -302,8 +340,8 @@ def format_selected_events(events):
 # === UI ===
 
 st.title("🗓️ Marian Event Selector")
-st.info("✅ Select events to generate the HTML output.")
-st.info("👉 **After** selecting all needed events please make sure **Connect Events** is selected **before** downloading the HTML output to ensure accurate location details.")
+st.info("✅ **Select** events to generate the **HTML output**.")
+st.markdown("### 🔷 Step 1: Select your event source")
 
 option = st.selectbox(
     "Select event source:",
@@ -314,8 +352,7 @@ option = st.selectbox(
     ]
 )
 
-if not option.startswith("Connect Events"):
-    st.warning("⚠️ For the most accurate formatting and location details, please select 'Connect Events' before downloading the HTML.")
+
 
 if option.startswith("Campus Events"):
     data = load_json_events()
@@ -330,10 +367,22 @@ elif option.startswith("Muknights Events"):
 else:
     filtered = []
 
+st.markdown("### 🔷 Step 2: Select needed events. Change event source to view more")
+
+
 
 search_query = st.text_input("🔍 Search for event title (optional):", "")
 if search_query:
     filtered = [e for e in filtered if search_query.lower() in e.get("title", "").lower()]
+
+show_only_future = st.checkbox("🔜 Show only upcoming events (from today)", value=False)
+if show_only_future:
+    now = datetime.now(pytz.timezone("US/Eastern"))
+    filtered = [
+        e for e in filtered
+        if datetime.fromisoformat(e["startDate"]).astimezone(pytz.timezone("US/Eastern")) >= now
+    ]
+
 
 
 if "checkbox_states" not in st.session_state:
@@ -414,11 +463,30 @@ with right:
         if option.startswith("Connect Events"):
             st.download_button("⬇️ Download HTML file", text_output, file_name="selected-events.html")
         else:
-            st.warning("⚠️ You can only download the HTML file when 'Connect Events' is selected.")
+            # ⛔️ Deaktivierter Button durch HTML/CSS simuliert
+            st.markdown("""
+                <div style='margin-top: 1rem;'>
+                    <button disabled title="Please select 'Connect Events' to enable download"
+                            style="
+                                background-color: #cccccc;
+                                color: #666666;
+                                padding: 0.6rem 1.2rem;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: not-allowed;
+                                width: 100%;
+                                font-weight: bold;">
+                        ⬇️ Download HTML file (disabled)
+                    </button>
+                    <small style="color: gray;">⚠️ Only available when 'Connect Events' is selected</small>
+                </div>
+            """, unsafe_allow_html=True)
     else:
         st.info("✅ Select events to generate the HTML output.")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+
 
 
 st.markdown("""
