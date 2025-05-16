@@ -404,18 +404,22 @@ with right:
         for key in st.session_state.checkbox_states:
             st.session_state.checkbox_states[key] = False
         st.session_state.selected_events = []
-    
 
     if combined_selected:
         st.markdown("### 📝 Formatted HTML Output")
         text_output = format_selected_events(combined_selected)
         st.markdown("### 📧 HTML Newsletter Preview")
         st.markdown(text_output, unsafe_allow_html=True)
-        st.download_button("⬇️ Download HTML file", text_output, file_name="selected-events.html")
+
+        if option.startswith("Connect Events"):
+            st.download_button("⬇️ Download HTML file", text_output, file_name="selected-events.html")
+        else:
+            st.warning("⚠️ You can only download the HTML file when 'Connect Events' is selected.")
     else:
         st.info("✅ Select events to generate the HTML output.")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 st.markdown("""
 ---
