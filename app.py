@@ -10,20 +10,71 @@ if "selected_events" not in st.session_state:
     st.session_state.selected_events = []
 
 st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Lato&family=Source+Sans+Pro:wght@700&display=swap" rel="stylesheet">
+""", unsafe_allow_html=True)
+
+st.markdown("""
 <style>
-/* Macht rechte Spalte sticky */
-.sticky-output {
-    position: sticky;
-    top: 100px;
-    align-self: flex-start;
-    background-color: #F9FAFB;
-    padding: 1.2rem;
-    border: 1px solid #DAD9D6;
+/* Typografie */
+body, p, li {
+    font-family: 'Lato', sans-serif;
+}
+h1, h2, h3 {
+    font-family: 'Source Sans Pro', sans-serif;
+    color: #031E51;
+}
+
+/* Layout */
+.block-container {
+    padding: 2rem 2rem 4rem;
+    max-width: 900px;
+    margin: auto;
+}
+
+/* Marian Farben */
+.stCheckbox:hover {
+    background-color: #E8F0FF;
+    border-color: #031E51;
+}
+input[type="checkbox"]:checked + div {
+    background-color: #E8F0FF !important;
+    border-left: 5px solid #FDB813 !important;
+    padding-left: 12px;
+    font-weight: 600;
+}
+
+/* Button-Stil */
+.stButton>button, .stDownloadButton>button {
+    background-color: #FDB813;
+    color: #031E51;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    margin-top: 1rem;
+    transition: 0.2s ease-in-out;
+}
+.stButton>button:hover, .stDownloadButton>button:hover {
+    background-color: #e0a400;
+    color: white;
+}
+
+/* Card-Stil für Checkboxen */
+div[data-testid="stCheckbox"] {
     border-radius: 10px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.04);
+    background-color: #FAFAFA;
+    border: 1px solid #E0E0E0;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: 0.2s ease-in-out;
+}
+div[data-testid="stCheckbox"]:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 </style>
 """, unsafe_allow_html=True)
+
+
 
 
 st.markdown("""
@@ -77,12 +128,30 @@ st.markdown("""
     .stButton>button:hover, .stDownloadButton>button:hover {
         background-color: #e0a400;
     }
+    /* Card-Style für Checkbox-Events */
+    div[data-testid="stCheckbox"] {
+        border-radius: 10px;
+        background-color: #FAFAFA;
+        border: 1px solid #E0E0E0;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        transition: 0.2s ease-in-out;
+    }
+
+    div[data-testid="stCheckbox"]:hover {
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # Marian University Logo oben anzeigen
-st.image("https://www.marian.edu/images/default-source/_logos/marian-university-logo.png?sfvrsn=0&MaxWidth=100&MaxHeight=100&ScaleUp=false&Quality=High&Method=ResizeFitToAreaArguments&Signature=0B8446F612A6F807C9682F238368F952", width=200)
-
+st.markdown("""
+<div style="text-align: center; margin-bottom: 1rem;">
+    <img src="https://www.marian.edu/images/default-source/_logos/marian-university-logo.png?sfvrsn=0&MaxWidth=100&MaxHeight=100&ScaleUp=false&Quality=High&Method=ResizeFitToAreaArguments&Signature=0B8446F612A6F807C9682F238368F952"
+         alt="Marian University Logo" style="width: 200px;">
+</div>
+""", unsafe_allow_html=True)
 
 
 
@@ -244,6 +313,9 @@ option = st.selectbox(
     ]
 )
 
+if not option.startswith("Connect Events"):
+    st.warning("⚠️ For the most accurate formatting and location details, please select 'Connect Events' before downloading the HTML.")
+
 if option.startswith("Campus Events"):
     data = load_json_events()
     filtered = [
@@ -256,6 +328,12 @@ elif option.startswith("Muknights Events"):
     filtered = load_muknights_rss_events()
 else:
     filtered = []
+
+
+search_query = st.text_input("🔍 Search for event title (optional):", "")
+if search_query:
+    filtered = [e for e in filtered if search_query.lower() in e.get("title", "").lower()]
+
 
 if "checkbox_states" not in st.session_state:
     st.session_state.checkbox_states = {}
@@ -282,6 +360,7 @@ with left:
         checked = st.session_state.checkbox_states.get(unique_key, False)
         checked = st.checkbox(label, key=unique_key, value=checked)
         st.session_state.checkbox_states[unique_key] = checked
+
 
 # ✅ Session-State aktualisieren mit allen aktuell gesetzten Checkboxen
 st.session_state.selected_events = [
@@ -320,7 +399,7 @@ combined_selected = list(merged.values())
 with right:
     st.markdown('<div class="sticky-output">', unsafe_allow_html=True)
 
-    if st.button("❌ Clear all selections"):
+    if st.button("❌ Clear selections (double click)"):
         for key in st.session_state.checkbox_states:
             st.session_state.checkbox_states[key] = False
         st.session_state.selected_events = []
@@ -337,5 +416,11 @@ with right:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
+st.markdown("""
+---
+<div style="text-align: center; font-size: 0.85rem; color: gray;">
+Made by Jonas Schaefer | Indianapolis, IN
+</div>
+""", unsafe_allow_html=True)
 
 
