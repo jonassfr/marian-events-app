@@ -78,8 +78,8 @@ div[data-baseweb="select"] {
     background-color: #F8F9FC;
     border: 2px solid #031E51;
     border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
     box-shadow: 0 1px 4px rgba(3, 30, 81, 0.1);
 }
 
@@ -181,6 +181,49 @@ st.markdown("""
         box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     </style>
+
+    <style>
+    @media (prefers-color-scheme: dark) {
+        body, p, li {
+            color: #e0e0e0;
+            background-color: #0e1117;
+        }
+
+        h1, h2, h3 {
+            color: #f0f0f0;
+        }
+
+        .block-container {
+            background-color: #0e1117;
+        }
+
+        div[data-testid="stCheckbox"] {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            box-shadow: 0 1px 4px rgba(255,255,255,0.05);
+        }
+
+        input[type="checkbox"]:checked + div {
+            background-color: #294263 !important;
+            border-left: 5px solid #FDB813 !important;
+        }
+
+        .stCheckbox:hover {
+            background-color: #2a2f3a;
+        }
+
+        .stButton>button, .stDownloadButton>button {
+            background-color: #FDB813;
+            color: black;
+        }
+
+        .sticky-output {
+            background-color: #1a1a1a !important;
+            border: 1px solid #333 !important;
+            color: #f0f0f0;
+        }
+    }
+    </style>
 """, unsafe_allow_html=True)
 
 # Marian University Logo oben anzeigen
@@ -190,7 +233,6 @@ st.markdown("""
          alt="Marian University Logo" style="width: 200px;">
 </div>
 """, unsafe_allow_html=True)
-
 
 
 # === Config ===
